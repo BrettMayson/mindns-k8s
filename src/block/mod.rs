@@ -75,7 +75,7 @@ impl Blocker {
         if !blocked {
             return false;
         }
-        self.data
+        !self.data
             .allows
             .read()
             .await
