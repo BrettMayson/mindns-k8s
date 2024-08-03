@@ -42,6 +42,11 @@ pub async fn handle_query(
     let mirror_ns = config.mirror.servers.first().unwrap().as_str();
 
     if config.mirror.enabled {
+        if question.name.ends_with(".home.arpa") {
+            out.header.rescode = ResultCode::NXDOMAIN;
+            return
+        }
+
         let result = recursive_lookup(mirror_ns, &question.name, question.qtype, cache);
 
         if let Ok(result) = result {
