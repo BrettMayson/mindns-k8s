@@ -110,9 +110,11 @@ async fn k8s(rewrites: Rewrites) {
     let ingress: Api<Ingress> = Api::all(client.clone());
 
     let existing = ingress.list(&ListParams::default()).await.unwrap();
+    let mut rules = Vec::new();
     for i in existing {
-        rewrites.add_k8s_rewrites(ingress_rewrites(i).await).await;
+        rules.append(&mut ingress_rewrites(i).await);
     }
+    rewrites.add_k8s_rewrites(rules).await;
 
     let obs = watcher(ingress, kube::runtime::watcher::Config::default())
         .default_backoff()
@@ -123,8 +125,10 @@ async fn k8s(rewrites: Rewrites) {
         // I am too lazy to do this correctly, so just redo the whole thing.
         let ingress: Api<Ingress> = Api::all(client.clone());
         let existing = ingress.list(&ListParams::default()).await.unwrap();
+        let mut rules = Vec::new();
         for i in existing {
-            rewrites.add_k8s_rewrites(ingress_rewrites(i).await).await;
+            rules.append(&mut ingress_rewrites(i).await);
         }
+        rewrites.add_k8s_rewrites(rules).await;
     }
 }
