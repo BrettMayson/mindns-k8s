@@ -3,6 +3,7 @@ use std::{net::IpAddr, sync::Arc};
 use dashmap::DashMap;
 use serde_derive::Deserialize;
 use tokio::sync::Mutex;
+use tracing::info;
 
 use crate::protocol::dns_record::DnsRecord;
 
@@ -33,6 +34,7 @@ impl Rewrites {
     }
 
     pub async fn add_rewrite(&self, rule: &RewriteRule) {
+        info!("Adding rewrite for {} -> {}", rule.host, rule.ip);
         self.data.rewrites.insert(
             rule.host.to_string(),
             match rule.ip {
