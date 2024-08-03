@@ -57,12 +57,17 @@ impl Rewrites {
         let existing = self.data.from_k8s.lock().await;
         self.data.rewrites.retain(|k, _| !existing.contains(k));
         let mut new = Vec::new();
-        for rule in rules {
+        for rule in &rules {
             new.push(rule.host.clone());
-            self.add_rewrite(&rule).await;
+            self.add_rewrite(rule).await;
         }
         drop(existing);
         *self.data.from_k8s.lock().await = new;
+        info!(
+            "Added {} rewrites from K8s, {} total in database",
+            rules.len(),
+            self.data.rewrites.len()
+        );
     }
 
     pub async fn remove_rewrite(&self, host: &str) {
