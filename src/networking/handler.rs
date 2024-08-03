@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tracing::info;
+use tracing::{debug, info};
 
 use crate::{
     block::Blocker,
@@ -44,8 +44,11 @@ pub async fn handle_query(
     if config.mirror.enabled {
         if question.name.ends_with(".home.arpa") {
             out.header.rescode = ResultCode::NXDOMAIN;
-            return
+            debug!("NXDOMAIN for {}", question.name);
+            return;
         }
+
+        debug!("Lookup for {}", question.name);
 
         let result = recursive_lookup(mirror_ns, &question.name, question.qtype, cache);
 
@@ -88,11 +91,6 @@ pub async fn handle_request(
     packet.header.response = true;
 
     if let Some(question) = request.questions.pop() {
-        info!(
-            "Client {} requested {:?} {}",
-            peer.addr, question.qtype, question.name,
-        );
-
         packet.questions.push(question.clone());
         handle_query(config, &question, &mut packet, cache, blocker, rewrites).await;
     } else {
