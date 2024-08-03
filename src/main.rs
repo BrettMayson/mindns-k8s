@@ -30,7 +30,7 @@ pub type Cache = dashmap::DashMap<String, (std::time::SystemTime, protocol::dns_
 #[tokio::main]
 async fn main() -> Result<()> {
     // Load configuration file.
-    let config = config::load_config_relative("./mindns.yaml");
+    let config = config::load_config_relative("./config.yaml");
     tracing_subscriber::fmt::init();
     info!("Loaded configuration file.");
 
