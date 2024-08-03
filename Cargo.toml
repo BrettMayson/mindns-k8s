@@ -14,7 +14,7 @@ dashmap = "6.0.1"
 net2 = "0.2.39"
 num_cpus = "1.16.0"
 regex = "1.10.6"
-reqwest = "0.12.5"
+reqwest = { version = "0.12.5", features = ["rustls-tls"] }
 serde = "1.0.204"
 serde_derive = "1.0.204"
 serde_yaml = "0.9.34+deprecated"
