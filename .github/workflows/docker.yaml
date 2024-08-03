@@ -1,0 +1,27 @@
+name: Docker Build and Publish
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Build Image
+        run: docker build -t ghcr.io/brettmayson/mindns-k8s:latest .
+
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u brettmayson --password-stdin
+
+      - name: Push Image
+        run: docker push ghcr.io/brettmayson/mindns-k8s:latest

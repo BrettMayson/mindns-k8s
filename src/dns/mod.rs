@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, UdpSocket};
 
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::{
     protocol::{
@@ -46,11 +46,12 @@ fn lookup(
 
     let packet = DnsPacket::from_buffer(&mut res_buffer);
     if let Ok(packet) = &packet {
-        info!("Received response for {}!", qname);
-        cache.insert(
-            qname.to_string(),
-            (std::time::SystemTime::now(), packet.clone()),
-        );
+        if !packet.answers.is_empty() {
+            cache.insert(
+                qname.to_string(),
+                (std::time::SystemTime::now(), packet.clone()),
+            );
+        }
     }
     packet
 }

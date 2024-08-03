@@ -3,12 +3,14 @@ use std::sync::Arc;
 use tracing::info;
 
 use crate::{
+    block::Blocker,
     config::Config,
     dns::recursive_lookup,
     protocol::{
         byte_packet_buffer::BytePacketBuffer, dns_packet::DnsPacket, dns_question::DnsQuestion,
         result_code::ResultCode, Result,
     },
+    rewrites::Rewrites,
     Cache,
 };
 
@@ -19,11 +21,27 @@ pub async fn handle_query(
     question: &DnsQuestion,
     out: &mut DnsPacket,
     cache: &Cache,
+    blocker: &Blocker,
+    rewrites: &Rewrites,
 ) {
-    let mirror_enabled = config.mirror.enabled;
-    let mirror_ns = config.mirror.server.as_str();
+    if !config.rewrites.is_empty() {
+        if let Some(rewrite) = rewrites.get_rewrite(&question.name).await {
+            info!("Rewriting query for {}", question.name);
+            out.header.rescode = ResultCode::NOERROR;
+            out.answers.push(rewrite);
+            return;
+        }
+    }
 
-    if mirror_enabled {
+    if config.block.enabled && blocker.is_blocked(&question.name).await {
+        info!("Blocked query for {}", question.name);
+        out.header.rescode = ResultCode::NXDOMAIN;
+        return;
+    }
+
+    let mirror_ns = config.mirror.servers.first().unwrap().as_str();
+
+    if config.mirror.enabled {
         let result = recursive_lookup(mirror_ns, &question.name, question.qtype, cache);
 
         if let Ok(result) = result {
@@ -53,6 +71,8 @@ pub async fn handle_request(
     peer: &Arc<UdpPeer>,
     buffer: &mut BytePacketBuffer,
     cache: &Cache,
+    blocker: &Blocker,
+    rewrites: &Rewrites,
 ) -> Result<()> {
     let mut request = DnsPacket::from_buffer(buffer)?;
 
@@ -69,7 +89,7 @@ pub async fn handle_request(
         );
 
         packet.questions.push(question.clone());
-        handle_query(config, &question, &mut packet, cache).await;
+        handle_query(config, &question, &mut packet, cache, blocker, rewrites).await;
     } else {
         packet.header.rescode = ResultCode::FORMERR;
     }

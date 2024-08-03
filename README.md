@@ -18,5 +18,4 @@ MinDNS is a minimal DNS server written in Rust. It is intended to be used as a f
 
 ## 📝 License
 
-Forked from [Sammwy/MinDNS](https://github.com/sammwyy/mindns) under MIT license.  
-This project is [MIT](LICENSE) licensed.
+Forked from [Sammwy/MinDNS](https://github.com/sammwyy/mindns) under MIT license.

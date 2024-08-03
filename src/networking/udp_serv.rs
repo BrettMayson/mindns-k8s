@@ -46,7 +46,7 @@ where
 {
     /// new udp server
     pub fn new<A: ToSocketAddrs>(addr: A, input: I) -> io::Result<Self> {
-        let udp_list = create_udp_socket_list(&addr, get_cpu_count())?;
+        let udp_list = create_udp_socket_list(&addr, num_cpus::get())?;
         let udp_contexts = udp_list
             .into_iter()
             .enumerate()
@@ -249,14 +249,4 @@ fn create_udp_socket_list<A: ToSocketAddrs>(
         listens.push(sock);
     }
     Ok(listens)
-}
-
-#[cfg(not(target_os = "windows"))]
-fn get_cpu_count() -> usize {
-    num_cpus::get()
-}
-
-#[cfg(target_os = "windows")]
-fn get_cpu_count() -> usize {
-    1
 }

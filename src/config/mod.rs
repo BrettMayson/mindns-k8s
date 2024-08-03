@@ -1,28 +1,41 @@
 use std::path::PathBuf;
 
-use serde_derive::Deserialize;
+use files::ConfigFile;
 
-#[derive(Clone, Deserialize)]
+use crate::rewrites::RewriteRule;
+
+mod files;
+
+#[derive(Clone)]
 pub struct ServerSettings {
     pub port: u16,
     pub bind: String,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone)]
 pub struct MirrorSettings {
     pub enabled: bool,
-    pub server: String,
+    pub servers: Vec<String>,
 }
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone)]
+pub struct BlockSettings {
+    pub enabled: bool,
+    pub lists: Vec<String>,
+}
+
+#[derive(Clone)]
 pub struct Config {
     pub server: ServerSettings,
     pub mirror: MirrorSettings,
+    pub block: BlockSettings,
+    pub rewrites: Vec<RewriteRule>,
 }
 
 pub fn load_config(path: PathBuf) -> Config {
     let config = std::fs::read_to_string(path).unwrap();
-    toml::from_str(&config).unwrap()
+    let configfile: ConfigFile = serde_yaml::from_str(&config).unwrap();
+    configfile.into()
 }
 
 pub fn load_config_relative(path: &str) -> Config {
