@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use protocol::Result;
 use tracing::info;
 
@@ -5,14 +7,13 @@ use crate::config::Config;
 use crate::networking::handler::handle_request;
 use crate::networking::udp_serv::UdpServer;
 use crate::protocol::byte_packet_buffer::BytePacketBuffer;
-use crate::rules::Rule;
 
 mod config;
 mod dns;
 mod networking;
 mod protocol;
-mod rules;
-mod utils;
+
+pub type Cache = dashmap::DashMap<String, (std::time::SystemTime, protocol::dns_packet::DnsPacket)>;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -21,30 +22,28 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
     info!("Loaded configuration file.");
 
-    // Load rules.
-    let rules = rules::parse_rules_config(&config.rules);
-    info!("Loaded {} rules.", rules.len());
-
     // Start DNS server.
     let raw_addr = format!("{}:{}", config.server.bind, config.server.port);
     info!("Starting DNS server at udp://{}", raw_addr);
 
-    UdpServer::new(
-        raw_addr,
-        |peer, mut reader, (config, rules): (Config, Vec<Rule>)| async move {
+    let cache = Arc::new(Cache::new());
+
+    UdpServer::new(raw_addr, move |peer, mut reader, config: Config| {
+        let cache = cache.clone();
+        async move {
             let mut buffer = BytePacketBuffer::new();
             while let Some(Ok(data)) = reader.recv().await {
                 buffer.pos = 0;
                 buffer.buf[..data.len()].copy_from_slice(&data);
 
-                handle_request(&config, &rules, &peer, &mut buffer).await?;
+                handle_request(&config, &peer, &mut buffer, &cache).await?;
             }
 
             Ok(())
-        },
-    )?
+        }
+    })?
     .set_peer_timeout_sec(20)
-    .start((config, rules))
+    .start(config)
     .await?;
 
     Ok(())

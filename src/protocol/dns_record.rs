@@ -224,4 +224,15 @@ impl DnsRecord {
 
         Ok(buffer.pos() - start_pos)
     }
+
+    pub fn ttl(&self) -> u32 {
+        match *self {
+            DnsRecord::A { ttl, .. } => ttl,
+            DnsRecord::NS { ttl, .. } => ttl,
+            DnsRecord::CNAME { ttl, .. } => ttl,
+            DnsRecord::MX { ttl, .. } => ttl,
+            DnsRecord::AAAA { ttl, .. } => ttl,
+            DnsRecord::UNKNOWN { ttl, .. } => ttl,
+        }
+    }
 }

@@ -1,13 +1,29 @@
 use std::net::{Ipv4Addr, UdpSocket};
 
-use tracing::info;
+use tracing::{debug, info};
 
-use crate::protocol::{
-    byte_packet_buffer::BytePacketBuffer, dns_packet::DnsPacket, dns_question::DnsQuestion,
-    query_type::QueryType, result_code::ResultCode, Result,
+use crate::{
+    protocol::{
+        byte_packet_buffer::BytePacketBuffer, dns_packet::DnsPacket, dns_question::DnsQuestion,
+        query_type::QueryType, result_code::ResultCode, Result,
+    },
+    Cache,
 };
 
-fn lookup(qname: &str, qtype: QueryType, server: (Ipv4Addr, u16)) -> Result<DnsPacket> {
+fn lookup(
+    qname: &str,
+    qtype: QueryType,
+    server: (Ipv4Addr, u16),
+    cache: &Cache,
+) -> Result<DnsPacket> {
+    if let Some(data) = cache.get(qname) {
+        let (_, (fetched, packet)) = data.pair();
+        let ttl = packet.answers.first().map(|x| x.ttl()).unwrap_or(0);
+        if fetched.elapsed().unwrap().as_secs() < ttl as u64 {
+            return Ok(packet.clone());
+        }
+    }
+
     let socket = UdpSocket::bind(("0.0.0.0", 43210))?;
 
     let mut packet = DnsPacket::new();
@@ -28,22 +44,35 @@ fn lookup(qname: &str, qtype: QueryType, server: (Ipv4Addr, u16)) -> Result<DnsP
     socket.set_read_timeout(Some(std::time::Duration::from_secs(5)))?;
     socket.recv_from(&mut res_buffer.buf)?;
 
-    DnsPacket::from_buffer(&mut res_buffer)
+    let packet = DnsPacket::from_buffer(&mut res_buffer);
+    if let Ok(packet) = &packet {
+        info!("Received response for {}!", qname);
+        cache.insert(
+            qname.to_string(),
+            (std::time::SystemTime::now(), packet.clone()),
+        );
+    }
+    packet
 }
 
-pub fn recursive_lookup(dns_server: &str, qname: &str, qtype: QueryType) -> Result<DnsPacket> {
+pub fn recursive_lookup(
+    dns_server: &str,
+    qname: &str,
+    qtype: QueryType,
+    cache: &Cache,
+) -> Result<DnsPacket> {
     // For now we're always starting with *a.root-servers.net*.
     let mut ns = dns_server.parse::<Ipv4Addr>().unwrap();
 
     // Since it might take an arbitrary number of steps, we enter an unbounded loop.
     loop {
-        info!("Attempting {:?} {} with ns {}", qtype, qname, ns);
+        debug!("Attempting {:?} {} with ns {}", qtype, qname, ns);
 
         // The next step is to send the query to the active server.
         let ns_copy = ns;
 
         let server = (ns_copy, 53);
-        let response = lookup(qname, qtype, server)?;
+        let response = lookup(qname, qtype, server, cache)?;
 
         // If there are entries in the answer section, and no errors, we are done!
         if !response.answers.is_empty() && response.header.rescode == ResultCode::NOERROR {
@@ -75,7 +104,7 @@ pub fn recursive_lookup(dns_server: &str, qname: &str, qtype: QueryType) -> Resu
         // Here we go down the rabbit hole by starting _another_ lookup sequence in the
         // midst of our current one. Hopefully, this will give us the IP of an appropriate
         // name server.
-        let recursive_response = recursive_lookup(dns_server, new_ns_name, QueryType::A)?;
+        let recursive_response = recursive_lookup(dns_server, new_ns_name, QueryType::A, cache)?;
 
         // Finally, we pick a random ip from the result, and restart the loop. If no such
         // record is available, we again return the last result we got.
