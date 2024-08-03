@@ -1,5 +1,7 @@
 use std::{net::Ipv4Addr, sync::Arc};
 
+use tracing::info;
+
 use crate::{
     config::Config,
     dns::recursive_lookup,
@@ -92,11 +94,9 @@ pub async fn handle_request(
     packet.header.response = true;
 
     if let Some(question) = request.questions.pop() {
-        log::info!(
+        info!(
             "Client {} requested {:?} {}",
-            peer.addr,
-            question.qtype,
-            question.name,
+            peer.addr, question.qtype, question.name,
         );
 
         packet.questions.push(question.clone());

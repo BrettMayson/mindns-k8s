@@ -1,5 +1,7 @@
 use std::net::{Ipv4Addr, UdpSocket};
 
+use tracing::info;
+
 use crate::protocol::{
     byte_packet_buffer::BytePacketBuffer, dns_packet::DnsPacket, dns_question::DnsQuestion,
     query_type::QueryType, result_code::ResultCode, Result,
@@ -35,7 +37,7 @@ pub fn recursive_lookup(dns_server: &str, qname: &str, qtype: QueryType) -> Resu
 
     // Since it might take an arbitrary number of steps, we enter an unbounded loop.
     loop {
-        log::info!("Attempting {:?} {} with ns {}", qtype, qname, ns);
+        info!("Attempting {:?} {} with ns {}", qtype, qname, ns);
 
         // The next step is to send the query to the active server.
         let ns_copy = ns;
@@ -73,7 +75,7 @@ pub fn recursive_lookup(dns_server: &str, qname: &str, qtype: QueryType) -> Resu
         // Here we go down the rabbit hole by starting _another_ lookup sequence in the
         // midst of our current one. Hopefully, this will give us the IP of an appropriate
         // name server.
-        let recursive_response = recursive_lookup(dns_server, &new_ns_name, QueryType::A)?;
+        let recursive_response = recursive_lookup(dns_server, new_ns_name, QueryType::A)?;
 
         // Finally, we pick a random ip from the result, and restart the loop. If no such
         // record is available, we again return the last result we got.

@@ -6,14 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-anyhow = "1.0.75"
-async-lock = "2.8.0"
-async-trait = "0.1.74"
-chrono = "0.4.31"
-env_logger = "0.10.0"
-log = "0.4.20"
+anyhow = "1.0.86"
+async-lock = "3.4.0"
+async-trait = "0.1.81"
+chrono = "0.4.38"
 net2 = "0.2.39"
-serde = "1.0.189"
-serde_derive = "1.0.189"
-tokio = { version = "1.33.0", features = ["full", "tracing"] }
-toml = "0.8.2"
+num_cpus = "1.16.0"
+serde = "1.0.204"
+serde_derive = "1.0.204"
+tokio = { version = "1.39.2", features = ["full", "tracing"] }
+toml = "0.8.19"
+tracing = "0.1.40"
+tracing-subscriber = "0.3"

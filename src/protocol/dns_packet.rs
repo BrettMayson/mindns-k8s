@@ -120,7 +120,7 @@ impl DnsPacket {
                         _ => None,
                     })
             })
-            .map(|addr| *addr)
+            .copied()
             // Finally, pick the first valid entry
             .next()
     }

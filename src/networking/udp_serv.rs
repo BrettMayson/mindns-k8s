@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::sync::Arc;
 use std::time::Duration;
+use tracing::{debug, error, trace};
 
 use super::peer::{UDPPeer, UdpPeer, UdpReader};
 use net2::{UdpBuilder, UdpSocketExt};
@@ -104,7 +105,7 @@ where
             let create_peer_tx = tx.clone();
             let udp_context = udp_listen.clone();
             tokio::spawn(async move {
-                log::debug!("start udp listen:{index}");
+                debug!("start udp listen:{index}");
                 let mut buff = [0; BUFF_MAX_SIZE];
                 loop {
                     match udp_context.recv.recv_from(&mut buff).await {
@@ -118,7 +119,7 @@ where
                                     .or_insert_with(|| {
                                         let (peer, reader) =
                                             UdpPeer::new(index, udp_context.recv.clone(), addr);
-                                        log::trace!("create udp listen:{index} udp peer:{addr}");
+                                        trace!("create udp listen:{index} udp peer:{addr}");
                                         if let Err(err) =
                                             create_peer_tx.send((peer.clone(), reader, index, addr))
                                         {
@@ -134,14 +135,14 @@ where
                                     .push_data_and_update_instant(buff[..size].to_vec())
                                     .await
                                 {
-                                    log::error!("peer push data and update instant is error:{err}");
+                                    error!("peer push data and update instant is error:{err}");
                                 }
                             } else if let Err(err) = peer.push_data(buff[..size].to_vec()) {
-                                log::error!("peer push data is error:{err}");
+                                error!("peer push data is error:{err}");
                             }
                         }
                         Err(err) => {
-                            log::trace!("udp:{index} recv_from error:{err}");
+                            trace!("udp:{index} recv_from error:{err}");
                         }
                     }
                 }
@@ -159,7 +160,7 @@ where
                 .clone();
             tokio::spawn(async move {
                 if let Err(err) = (input_fn)(peer, reader, inner).await {
-                    log::error!("udp input error:{err}")
+                    error!("udp input error:{err}")
                 }
                 context.peers.lock().await.remove(&addr);
             });
@@ -241,7 +242,7 @@ fn create_udp_socket_list<A: ToSocketAddrs>(
     addr: &A,
     listen_count: usize,
 ) -> io::Result<Vec<UdpSocket>> {
-    log::debug!("cpus:{listen_count}");
+    debug!("cpus:{listen_count}");
     let mut listens = Vec::with_capacity(listen_count);
     for _ in 0..listen_count {
         let sock = create_async_udp_socket(addr)?;

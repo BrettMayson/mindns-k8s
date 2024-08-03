@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicI64, Ordering};
 use std::sync::Arc;
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
+use tracing::{error, trace};
 
 pub type UDPPeer = Arc<UdpPeer>;
 pub type UdpSender = UnboundedSender<io::Result<Vec<u8>>>;
@@ -22,7 +23,7 @@ pub struct UdpPeer {
 
 impl Drop for UdpPeer {
     fn drop(&mut self) {
-        log::trace!("drop udp peer:{}", self.addr);
+        trace!("drop udp peer:{}", self.addr);
     }
 }
 
@@ -87,7 +88,7 @@ impl UdpPeer {
             ErrorKind::TimedOut,
             "udp peer need close",
         ))) {
-            log::error!("send timeout to udp peer:{} error:{err}", self.get_addr());
+            error!("send timeout to udp peer:{} error:{err}", self.get_addr());
         }
     }
 }

@@ -1,7 +1,7 @@
 use protocol::Result;
+use tracing::info;
 
 use crate::config::Config;
-use crate::logs::setup_logger;
 use crate::networking::handler::handle_request;
 use crate::networking::udp_serv::UdpServer;
 use crate::protocol::byte_packet_buffer::BytePacketBuffer;
@@ -9,7 +9,6 @@ use crate::rules::Rule;
 
 mod config;
 mod dns;
-mod logs;
 mod networking;
 mod protocol;
 mod rules;
@@ -19,16 +18,16 @@ mod utils;
 async fn main() -> Result<()> {
     // Load configuration file.
     let config = config::load_config_relative("./mindns.toml");
-    setup_logger(&config.logs);
-    log::info!("Loaded configuration file.");
+    tracing_subscriber::fmt::init();
+    info!("Loaded configuration file.");
 
     // Load rules.
     let rules = rules::parse_rules_config(&config.rules);
-    log::info!("Loaded {} rules.", rules.len());
+    info!("Loaded {} rules.", rules.len());
 
     // Start DNS server.
     let raw_addr = format!("{}:{}", config.server.bind, config.server.port);
-    log::info!("Starting DNS server at udp://{}", raw_addr);
+    info!("Starting DNS server at udp://{}", raw_addr);
 
     UdpServer::new(
         raw_addr,

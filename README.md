@@ -1,4 +1,6 @@
-# MinDNS
+# MinDNS-K8s
+
+MinDNS-K8s is a fork of MinDNS that is intented to be used in Kubernetes, allowing for fast and easy replication, and automatic dns rewrites for ingress resources.
 
 MinDNS is a minimal DNS server written in Rust. It is intended to be used as a firewall, black-hole or proxy DNS server.
 
@@ -14,18 +16,7 @@ MinDNS is a minimal DNS server written in Rust. It is intended to be used as a f
 - [x] Mirroring from another DNS servers
 - [ ] DNSSEC
 
-## 🤝 Contributing
-
-Contributions, issues and feature requests are welcome!
-Feel free to check [issues page](https://github.com/sammwyy/mindns/issues).
-
-## ❤️ Show your support
-
-Give a ⭐️ if this project helped you!
-
-Or buy me a coffeelatte 🙌 on [Ko-fi](https://ko-fi.com/sammwy)
-
 ## 📝 License
 
-Copyright © 2023 [Sammwy](https://github.com/sammwyy).  
+Forked from [Sammwy/MinDNS](https://github.com/sammwyy/mindns) under MIT license.  
 This project is [MIT](LICENSE) licensed.
